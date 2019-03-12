@@ -1,0 +1,6 @@
+[package]
+name = "trap-the-knight"
+version = "0.1.0"
+authors = ["rafauu <gliniakr@gmail.com>"]
+
+[dependencies]
