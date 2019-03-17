@@ -24,75 +24,51 @@ impl Knight {
     fn make_move(&mut self, board: &mut [[Cell; BOARD_SIZE]; BOARD_SIZE]) -> (Position, bool) {
         let mut index = std::usize::MAX;
         let mut value = std::i32::MAX;
-        board[self.position.x as usize][self.position.y as usize].is_visited = true;
+        board[self.position.y as usize][self.position.x as usize].is_visited = true;
         for (i, movement) in self.movements.iter().enumerate() {
-            let (x, y) = (movement.0, movement.1);
-            if (self.position.x + x) < 0 ||
-               (self.position.x + x) >= BOARD_SIZE as i32 ||
-               (self.position.y + y) < 0 ||
-               (self.position.y + y) >= BOARD_SIZE as i32 {
+            let (y, x) = (self.position.y + movement.0, self.position.x + movement.1);
+            if x < 0 || x >= BOARD_SIZE as i32 ||
+               y < 0 || y >= BOARD_SIZE as i32 {
                 continue;
             }
-            if board[(self.position.x + x) as usize][(self.position.y + y) as usize].value < value && board[(self.position.x + x) as usize][(self.position.y + y) as usize].is_visited == false{
-                value = board[(self.position.x + x) as usize][(self.position.y + y) as usize].value;
+            let cell = board[y as usize][x as usize];
+            if cell.value < value && cell.is_visited == false {
+                value = cell.value;
                 index = i;
             }
         }
         if index == std::usize::MAX {
             return (self.position, false);
         }
-        let (x, y) = self.movements[index];
-        // print!("{} {} {} \n", index, self.position.x, self.position.y);
-        print!("{0: <2} {1: <2} \n", self.position.x, self.position.y);
-        // let (x_old_position, y_old_position) = (self.position.x, self.position.y);
-        self.position.x += x;
-        self.position.y += y;
-        // print!("{} {} {} \n\n", index, self.position.x, self.position.y);
-        // return (self.position.x, self.position.y);
+        // print!("{0: <2} {1: <2} \n", self.position.x, self.position.y);
+        self.position.y += self.movements[index].0;
+        self.position.x += self.movements[index].1;
         return (self.position, true);
-        // plot.lines(&[x_old_position, self.position.x],
-        //            &[y_old_position, self.position.y],
-        //            &[Color("black")]);
     }
 }
 
 extern crate gnuplot;
-use gnuplot::{Figure, Color, LineWidth , BorderColor, PointSize, PointSymbol};
+use gnuplot::{Figure, Color, Auto, BorderColor, PointSize, PointSymbol, AxesCommon};
 
 fn main() {
     let mut counter = 1i32;
-    // let mut board: Vec<Cell> = Vec::new();
     let mut board = [[Cell{value:0, is_visited:false}; BOARD_SIZE]; BOARD_SIZE];
-    // for x in 0..BOARD_SIZE {
     for x in 0..BOARD_SIZE {
         for y in 0..x+1 {
             board[y][x-y].value = counter;
-            // board[y][x-y].value = counter;
             counter += 1;
         }
     }
 
-    // for x in 0..BOARD_SIZE {
-    //     for y in 0..BOARD_SIZE {
-    //         print!("{0: <3}", board[x][y]);
-    //     }
-    //     print!("\n");
-    // }
-
     let mut knight = Knight {
-        position : Position {
-            x:0,
-            y:0,
-        },
+        position : Position {x:0, y:0},
         movements : [(1,2),(2,1),(2,-1),(1,-2),(-1,-2),(-2,-1),(-2,1),(-1,2)],
     };
 
     let mut position_history: Vec<Position> = Vec::new();
     position_history.push(Position{x:0, y:0});
 
-    let mut fg = Figure::new();
-    // let axes2d = &mut fg.axes2d();
-    for _i in 0..5000 {
+    for _i in 0..BOARD_SIZE*(BOARD_SIZE+1)/2 {
         let (position, is_correct) = knight.make_move(&mut board);
         if !is_correct {
             break;
@@ -102,15 +78,20 @@ fn main() {
     let mut x_values: Vec<i32> = Vec::new();
     let mut y_values: Vec<i32> = Vec::new();
     for position in position_history {
-        x_values.push(position.y);
-        y_values.push(-position.x);
+        x_values.push(position.x);
+        y_values.push(position.y);
     }
-    fg.axes2d().set_border(false, &[], &[LineWidth(0.0)])
+
+    let mut fg = Figure::new();
+    fg.axes2d().set_border(false, &[], &[])
+               .set_y_reverse(true)
+               .set_x_ticks(Some((Auto, 10-1)), &[], &[])
+               .set_y_ticks(Some((Auto, 10-1)), &[], &[])
                .lines(&x_values,
                       &y_values,
                       &[Color("blue"), BorderColor("white")])
                .points(x_values.last(),
                        y_values.last(),
-                       &[PointSymbol('x'), Color("red"), PointSize(3.0)]);
+                       &[PointSymbol('O'), Color("red"), PointSize(1.0)]);
     fg.show();
 }
